@@ -4,19 +4,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Message } from '@/types';
 
 // --- Utility for Tailwind classes ---
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-// --- Types ---
-type Message = {
-  id: string;
-  role: 'user' | 'agent';
-  content: string;
-  timestamp: Date;
-};
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -145,7 +138,6 @@ export default function ChatPage() {
       setErrorConfig({ show: true, msg: 'Failed to connect to the agent.' });
     } finally {
       setIsLoading(false);
-      // Re-focus input after sending
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
@@ -273,7 +265,6 @@ export default function ChatPage() {
             </p>
           </div>
         </div>
-
       </div>
     </main>
   );
