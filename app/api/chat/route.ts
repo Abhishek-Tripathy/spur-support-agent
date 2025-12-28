@@ -6,27 +6,14 @@ import { eq, desc } from 'drizzle-orm';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-const SYSTEM_INSTRUCTION = `
-You are a helpful and friendly customer support agent for Spur, a customer engagement platform that powers AI agents for businesses.
+const SYSTEM_INSTRUCTION = `You are a support agent for ShopEase, a fictional e-commerce store. Be helpful and concise.
 
-Your goal is to answer user questions clearly and concisely ONLY about Spur and its services.
-
-**Key Knowledge Base:**
-- **Product:** We power AI-driven customer support agents on WhatsApp, Instagram DMs, and website Live Chat widgets.
-- **Integrations:** Seamlessly integrate with Shopify (for order lookups), Zoho CRM, and Stripe (for billing inquiries).
-- **Use Cases:** E-commerce support, appointment scheduling, lead qualification, and FAQ automation.
-- **Pricing:** Starter Plan ($49/mo), Growth Plan ($149/mo), Enterprise (custom pricing). 14-day free trial available.
-- **Support Hours:** Monday to Friday, 9 AM - 6 PM EST.
-- **Return Policy:** 30-day money-back guarantee on all software subscriptions.
-
-**Tone:** Professional, concise, and helpful.
-
-**Rules:**
-1. ONLY answer questions related to Spur, its products, pricing, integrations, and customer support topics.
-2. If the user asks about unrelated topics (e.g., movies, sports, politics, personal advice, coding help, general knowledge), politely decline and redirect them. Example: "I'm here to help with Spur-related questions! Is there anything about our platform or services I can assist you with?"
-3. If you don't know the answer to a Spur-related question, politely say so and suggest contacting human support at support@spur.com.
-4. Do not make up facts or provide information outside of your knowledge base.
-`;
+FAQ:
+- Shipping: Free over $50, else $5.99. Delivery 3-5 business days. Express $12.99 (1-2 days).
+- Returns: 30 days, unused items, original packaging. Refund in 5-7 days.
+- Hours: Mon-Fri 9AM-6PM EST. Email: support@shopease.com
+- Payment: Visa, Mastercard, PayPal, Apple Pay.
+- Tracking: Check order status at shopease.com/track with order ID.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -104,23 +91,95 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Chat API Error:', error);
     
-    // Improved error handling for LLM-specific errors
-    let errorMessage = 'An error occurred while processing your request.';
-    let statusCode = 500;
-
-    if (error?.message?.includes('API_KEY')) {
-      errorMessage = 'Service configuration error. Please contact support.';
-    } else if (error?.message?.includes('RATE_LIMIT') || error?.status === 429) {
-      errorMessage = 'Too many requests. Please wait a moment and try again.';
-      statusCode = 429;
-    } else if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT') {
-      errorMessage = 'The request timed out. Please try again.';
-      statusCode = 504;
+    const errorString = String(error?.message || error || '').toLowerCase();
+    const errorStatus = error?.status || error?.statusCode;
+    
+    // 1. QUOTA EXHAUSTED / BILLING ISSUES
+    if (
+      errorString.includes('quota') ||
+      errorString.includes('exhausted') ||
+      errorString.includes('billing') ||
+      errorString.includes('insufficient') ||
+      errorStatus === 402
+    ) {
+      return NextResponse.json(
+        { error: 'Our AI service is temporarily unavailable. Please try again later.' },
+        { status: 503 }
+      );
     }
-
+    
+    // 2. INVALID / MISSING API KEY
+    if (
+      errorString.includes('api_key') ||
+      errorString.includes('api key') ||
+      errorString.includes('invalid key') ||
+      errorString.includes('unauthorized') ||
+      errorString.includes('authentication') ||
+      errorStatus === 401 || errorStatus === 403
+    ) {
+      return NextResponse.json(
+        { error: 'Service configuration error. Please contact support.' },
+        { status: 503 }
+      );
+    }
+    
+    // 3. RATE LIMIT EXCEEDED
+    if (
+      errorString.includes('rate') ||
+      errorString.includes('limit') ||
+      errorString.includes('too many') ||
+      errorStatus === 429
+    ) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment and try again.' },
+        { status: 429 }
+      );
+    }
+    
+    // 4. TIMEOUT ERRORS
+    if (
+      errorString.includes('timeout') ||
+      errorString.includes('timed out') ||
+      errorString.includes('etimedout') ||
+      errorString.includes('econnreset') ||
+      errorStatus === 504 || errorStatus === 408
+    ) {
+      return NextResponse.json(
+        { error: 'The request took too long. Please try again.' },
+        { status: 504 }
+      );
+    }
+    
+    // 5. MODEL NOT FOUND / UNAVAILABLE
+    if (
+      errorString.includes('model') ||
+      errorString.includes('not found') ||
+      errorString.includes('unavailable') ||
+      errorStatus === 404
+    ) {
+      return NextResponse.json(
+        { error: 'AI service is temporarily unavailable. Please try again later.' },
+        { status: 503 }
+      );
+    }
+    
+    // 6. CONTENT SAFETY / BLOCKED
+    if (
+      errorString.includes('safety') ||
+      errorString.includes('blocked') ||
+      errorString.includes('harmful') ||
+      errorString.includes('policy')
+    ) {
+      return NextResponse.json(
+        { error: 'I apologize, but I cannot respond to that. Please try a different question.' },
+        { status: 400 }
+      );
+    }
+    
+    // 7. GENERIC FALLBACK - Never expose raw errors
     return NextResponse.json(
-      { error: errorMessage }, 
-      { status: statusCode }
+      { error: 'Sorry, something went wrong. Please try again.' },
+      { status: 500 }
     );
   }
 }
