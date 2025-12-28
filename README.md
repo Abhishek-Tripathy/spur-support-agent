@@ -1,8 +1,8 @@
-# ShopEase AI Support Agent
+# Spur AI Support Agent
 
 A mini AI-powered customer support chat widget built as a technical assignment. Demonstrates a full-stack live chat implementation with LLM integration.
 
-🔗 **Live Demo:** [Deployed URL - Add after deployment]  
+🔗 **Live Demo:** [[Click Here](https://spur-support-agent-two.vercel.app/)]  
 📂 **Repository:** [github.com/Abhishek-Tripathy/spur-support-agent](https://github.com/Abhishek-Tripathy/spur-support-agent)
 
 ---
@@ -168,17 +168,17 @@ The prompt is kept concise (~400 chars) to minimize token usage.
 | Session-based (no auth) | Easy to demo but no user persistence across devices. |
 | Client-side session ID | Simpler but less secure than server-generated tokens. |
 
-### If I Had More Time...
+### 📝 Note on Session Persistence
 
-- [ ] **Streaming responses** - Show tokens as they arrive (better UX)
-- [ ] **RAG integration** - Vector DB for dynamic knowledge base
-- [ ] **Redis caching** - Cache frequent FAQ responses
-- [ ] **Rate limiting** - Per-IP limits to prevent abuse
-- [ ] **Analytics dashboard** - Track common questions, response times
-- [ ] **Markdown rendering** - Format AI responses with proper styling
-- [ ] **Voice input** - Speech-to-text for accessibility
+Since this MVP does not include user authentication (as per requirements), sessions are stored locally in the browser using `sessionStorage`:
 
----
+| Scenario | Behavior |
+|----------|----------|
+| **Page reload** | ✅ Chat history is preserved |
+| **Closing tab** | Session resets (by design for privacy) |
+| **New tab** | New session starts (tabs are isolated) |
+
+> This is intentional — `sessionStorage` provides per-tab isolation, which is suitable for a support widget demo without authentication.
 
 ## 📄 License
 
