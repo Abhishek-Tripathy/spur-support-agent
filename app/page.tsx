@@ -243,7 +243,7 @@ export default function ChatPage() {
           </div>
 
           <p className="text-center text-[10px] text-gray-500 mt-3">
-            Powered by Spur AI • Built with ❤️
+            Powered by Spur AI
           </p>
         </div>
       </div>
